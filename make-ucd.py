@@ -1,20 +1,27 @@
 from xml.etree import ElementTree as ET
 from collections import defaultdict
 
+print('Parsing XML...')
 tree = ET.parse('ucd.all.flat.xml')
 
 names = defaultdict(set)
 blocks = {}
 
+print('1/3 - parsing characters')
+
 for char_tag in tree.findall("./{http://www.unicode.org/ns/2003/ucd/1.0}repertoire/{http://www.unicode.org/ns/2003/ucd/1.0}char"):
     try:
         cp = int(char_tag.attrib["cp"], 16)
     except KeyError:
+        print('???', char_tag.attrib)
         continue
     name_set = names[cp]
+    name_set.add(char_tag.attrib["na"])
     name_set.add(char_tag.attrib["na1"])
     for alias in char_tag.findall("{http://www.unicode.org/ns/2003/ucd/1.0}name-alias"):
         name_set.add(alias.attrib["alias"])
+
+print('2/3 - parsing blocks')
 
 for block_tag in tree.findall(".//{http://www.unicode.org/ns/2003/ucd/1.0}block"):
     name = block_tag.attrib["name"]
@@ -23,6 +30,8 @@ for block_tag in tree.findall(".//{http://www.unicode.org/ns/2003/ucd/1.0}block"
         "start": int(block_tag.attrib["first-cp"], 16),
         "end": int(block_tag.attrib["last-cp"], 16),
     }
+
+print('3/3 - Writing unidata.py')
 
 with open("unidata.py", "w", encoding="UTF-8") as outf:
     outf.write("names = {\n")
